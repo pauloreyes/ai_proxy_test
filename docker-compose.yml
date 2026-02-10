@@ -5,9 +5,9 @@ services:
     ports:
       - "7000:8000"
     networks:
-      - ai_network
+      - ai_gateway_ai_network
     restart: always
 
 networks:
-  ai_network:
-    driver: bridge
+  ai_gateway_ai_network:
+    external: true
