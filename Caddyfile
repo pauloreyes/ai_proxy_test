@@ -1,4 +1,4 @@
-:80 {
+test.ldex.dev {
     reverse_proxy ai_proxy_test:8000
     
     header {
