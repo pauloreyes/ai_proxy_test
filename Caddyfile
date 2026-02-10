@@ -1,5 +1,5 @@
 test.ldex.dev {
-    reverse_proxy ai_proxy_test:8000
+    reverse_proxy localhost:7000
     
     header {
         X-Zscaler-Test "Ready"
