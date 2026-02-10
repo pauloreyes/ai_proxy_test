@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +13,7 @@
             --card: #1e293b;
             --text: #f8fafc;
         }
+
         body {
             font-family: 'Outfit', sans-serif;
             background-color: var(--bg);
@@ -23,23 +25,29 @@
             min-height: 100vh;
             margin: 0;
         }
+
         .container {
             background: var(--card);
             padding: 2rem;
             border-radius: 1rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             width: 100%;
             max-width: 500px;
             text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
         }
-        h1 { margin-bottom: 1.5rem; color: var(--primary); }
+
+        h1 {
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+        }
+
         .status-box {
             padding: 1rem;
             margin: 1rem 0;
             border-radius: 0.5rem;
-            background: rgba(0,0,0,0.2);
+            background: rgba(0, 0, 0, 0.2);
             min-height: 100px;
             text-align: left;
             font-family: monospace;
@@ -47,6 +55,7 @@
             word-break: break-all;
             white-space: pre-wrap;
         }
+
         button {
             background: var(--primary);
             color: white;
@@ -57,9 +66,21 @@
             font-weight: 600;
             transition: transform 0.2s, opacity 0.2s;
         }
-        button:hover { opacity: 0.9; transform: translateY(-2px); }
-        button:active { transform: translateY(0); }
-        .input-group { margin-bottom: 1rem; text-align: left; }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
         input {
             width: 100%;
             padding: 0.5rem;
@@ -71,6 +92,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Zscaler Proxy Test</h1>
@@ -80,54 +102,82 @@
         </div>
         <button onclick="testConnection()">Test GET /api/v1/chat</button>
         <button onclick="testPost()">Test POST Payload</button>
+        <button onclick="testPost(true)" style="background: #8b5cf6;">Stealth POST (text/plain)</button>
         <div class="status-box" id="status">Ready to test...</div>
     </div>
 
     <script>
-        async function testConnection() {
-            const statusDiv = document.getElementById('status');
-            const baseUrl = document.getElementById('apiUrl').value || window.location.origin;
-            statusDiv.innerText = 'Testing GET...';
-            
-            try {
-                const response = await fetch(`${baseUrl}/api/v1/chat`);
-                const data = await response.json();
-                statusDiv.innerText = `SUCCESS (GET):\n${JSON.stringify(data, null, 2)}`;
-                statusDiv.style.color = '#4ade80';
-            } catch (error) {
-                statusDiv.innerText = `ERROR:\n${error.message}\n\nCheck Zscaler blocks or CORS issues in Console.`;
-                statusDiv.style.color = '#f87171';
+        // Auto-fill logic
+        window.addEventListener('load', () => {
+            const currentUrl = window.location.origin;
+            if (currentUrl.includes('test.ldex.dev')) {
+                document.getElementById('apiUrl').value = currentUrl;
+            } else {
+                document.getElementById('apiUrl').value = 'https://test.ldex.dev';
             }
-        }
+        });
+    </script>
+    function updateStatus(text, color, isHtml = false) {
+    const statusDiv = document.getElementById('status');
+    statusDiv.style.color = color;
+    if (isHtml) {
+    statusDiv.innerText = text; // Keep as text to avoid executing scripts
+    } else {
+    statusDiv.innerText = text;
+    }
+    }
 
-        async function testPost() {
-            const statusDiv = document.getElementById('status');
-            const baseUrl = document.getElementById('apiUrl').value || window.location.origin;
-            statusDiv.innerText = 'Testing POST...';
-            
-            try {
-                const response = await fetch(`${baseUrl}/api/v1/chat`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        test: 'zscaler_bypass', 
-                        timestamp: new Date().toISOString(),
-                        message: 'Hello from office laptop!'
-                    })
-                });
-                const data = await response.json();
-                statusDiv.innerText = `SUCCESS (POST):\n${JSON.stringify(data, null, 2)}`;
-                statusDiv.style.color = '#4ade80';
-            } catch (error) {
-                statusDiv.innerText = `ERROR:\n${error.message}`;
-                statusDiv.style.color = '#f87171';
-            }
-        }
-        
-        // Auto-fill if we are running on a real domain
-        if (window.location.protocol.startsWith('http')) {
-            document.getElementById('apiUrl').value = window.location.origin;
-        }
+    async function testConnection() {
+    const baseUrl = document.getElementById('apiUrl').value || window.location.origin;
+    updateStatus('Testing GET...', '#facc15');
+
+    try {
+    const response = await fetch(`${baseUrl}/api/v1/chat`);
+    const text = await response.text();
+
+    try {
+    const data = JSON.parse(text);
+    updateStatus(`SUCCESS (GET):\n${JSON.stringify(data, null, 2)}`, '#4ade80');
+    } catch (e) {
+    updateStatus(`PARSING ERROR (Likely Blocked by Zscaler):\n\nRAW RESPONSE:\n${text.substring(0, 1000)}`, '#fb923c');
+    }
+    } catch (error) {
+    updateStatus(`FETCH ERROR:\n${error.message}\n\nThis usually means the domain is outright blocked or DNS is
+    failing.`, '#f87171');
+    }
+    }
+
+    async function testPost(isStealth = false) {
+    const baseUrl = document.getElementById('apiUrl').value || window.location.origin;
+    updateStatus(isStealth ? 'Testing Stealth POST...' : 'Testing POST...', '#facc15');
+
+    const payload = {
+    test: isStealth ? 'stealth_bypass' : 'zscaler_test',
+    timestamp: new Date().toISOString(),
+    message: 'Hello from office laptop!'
+    };
+
+    try {
+    const response = await fetch(`${baseUrl}/api/v1/chat`, {
+    method: 'POST',
+    headers: {
+    'Content-Type': isStealth ? 'text/plain' : 'application/json'
+    },
+    body: isStealth ? JSON.stringify(payload) : JSON.stringify(payload)
+    });
+
+    const text = await response.text();
+    try {
+    const data = JSON.parse(text);
+    updateStatus(`SUCCESS (POST):\n${JSON.stringify(data, null, 2)}`, '#4ade80');
+    } catch (e) {
+    updateStatus(`POST BLOCKED / PARSING ERROR:\n\nRAW RESPONSE:\n${text.substring(0, 1000)}`, '#fb923c');
+    }
+    } catch (error) {
+    updateStatus(`POST FETCH ERROR:\n${error.message}`, '#f87171');
+    }
+    }
     </script>
 </body>
+
 </html>
