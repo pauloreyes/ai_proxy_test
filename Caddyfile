@@ -1,0 +1,8 @@
+:80 {
+    reverse_proxy ai_proxy_test:8000
+    
+    header {
+        X-Zscaler-Test "Ready"
+        Access-Control-Allow-Origin *
+    }
+}

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zscaler Connectivity Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+        h1 { margin-bottom: 1.5rem; color: var(--primary); }
+        .status-box {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0.5rem;
+            background: rgba(0,0,0,0.2);
+            min-height: 100px;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+        .input-group { margin-bottom: 1rem; text-align: left; }
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            border: 1px solid #444;
+            background: #000;
+            color: white;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Zscaler Proxy Test</h1>
+        <div class="input-group">
+            <label>API URL (e.g., https://yourdomain.com):</label>
+            <input type="text" id="apiUrl" placeholder="Auto-detected if hosted same">
+        </div>
+        <button onclick="testConnection()">Test GET /api/v1/chat</button>
+        <button onclick="testPost()">Test POST Payload</button>
+        <div class="status-box" id="status">Ready to test...</div>
+    </div>
+
+    <script>
+        async function testConnection() {
+            const statusDiv = document.getElementById('status');
+            const baseUrl = document.getElementById('apiUrl').value || window.location.origin;
+            statusDiv.innerText = 'Testing GET...';
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/chat`);
+                const data = await response.json();
+                statusDiv.innerText = `SUCCESS (GET):\n${JSON.stringify(data, null, 2)}`;
+                statusDiv.style.color = '#4ade80';
+            } catch (error) {
+                statusDiv.innerText = `ERROR:\n${error.message}\n\nCheck Zscaler blocks or CORS issues in Console.`;
+                statusDiv.style.color = '#f87171';
+            }
+        }
+
+        async function testPost() {
+            const statusDiv = document.getElementById('status');
+            const baseUrl = document.getElementById('apiUrl').value || window.location.origin;
+            statusDiv.innerText = 'Testing POST...';
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        test: 'zscaler_bypass', 
+                        timestamp: new Date().toISOString(),
+                        message: 'Hello from office laptop!'
+                    })
+                });
+                const data = await response.json();
+                statusDiv.innerText = `SUCCESS (POST):\n${JSON.stringify(data, null, 2)}`;
+                statusDiv.style.color = '#4ade80';
+            } catch (error) {
+                statusDiv.innerText = `ERROR:\n${error.message}`;
+                statusDiv.style.color = '#f87171';
+            }
+        }
+        
+        // Auto-fill if we are running on a real domain
+        if (window.location.protocol.startsWith('http')) {
+            document.getElementById('apiUrl').value = window.location.origin;
+        }
+    </script>
+</body>
+</html>
