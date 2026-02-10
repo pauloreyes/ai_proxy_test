@@ -65,6 +65,7 @@
             cursor: pointer;
             font-weight: 600;
             transition: transform 0.2s, opacity 0.2s;
+            margin: 5px;
         }
 
         button:hover {
@@ -102,11 +103,67 @@
         </div>
         <button onclick="testConnection()">Test GET /api/v1/chat</button>
         <button onclick="testPost()">Test POST Payload</button>
-        <button onclick="testPost(true)" style="background: #8b5cf6;">Stealth POST (text/plain)</button>
+        <button onclick="testPost(true)" style="background: #8b5cf6;">Stealth POST</button>
         <div class="status-box" id="status">Ready to test...</div>
     </div>
 
     <script>
+        function updateStatus(text, color) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.style.color = color;
+            statusDiv.innerText = text;
+        }
+
+        async function testConnection() {
+            const baseUrl = document.getElementById('apiUrl').value || window.location.origin;
+            updateStatus('Testing GET...', '#facc15');
+
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/chat`);
+                const text = await response.text();
+
+                try {
+                    const data = JSON.parse(text);
+                    updateStatus(`SUCCESS (GET):\n${JSON.stringify(data, null, 2)}`, '#4ade80');
+                } catch (e) {
+                    updateStatus(`PARSING ERROR (Likely Blocked by Zscaler):\n\nRAW RESPONSE:\n${text.substring(0, 1000)}`, '#fb923c');
+                }
+            } catch (error) {
+                updateStatus(`FETCH ERROR:\n${error.message}\n\nThis usually means the domain is outright blocked or DNS is failing.`, '#f87171');
+            }
+        }
+
+        async function testPost(isStealth = false) {
+            const baseUrl = document.getElementById('apiUrl').value || window.location.origin;
+            updateStatus(isStealth ? 'Testing Stealth POST...' : 'Testing POST...', '#facc15');
+
+            const payload = {
+                test: isStealth ? 'stealth_bypass' : 'zscaler_test',
+                timestamp: new Date().toISOString(),
+                message: 'Hello from office laptop!'
+            };
+
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': isStealth ? 'text/plain' : 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const text = await response.text();
+                try {
+                    const data = JSON.parse(text);
+                    updateStatus(`SUCCESS (POST):\n${JSON.stringify(data, null, 2)}`, '#4ade80');
+                } catch (e) {
+                    updateStatus(`POST BLOCKED / PARSING ERROR:\n\nRAW RESPONSE:\n${text.substring(0, 1000)}`, '#fb923c');
+                }
+            } catch (error) {
+                updateStatus(`POST FETCH ERROR:\n${error.message}`, '#f87171');
+            }
+        }
+
         // Auto-fill logic
         window.addEventListener('load', () => {
             const currentUrl = window.location.origin;
@@ -116,67 +173,6 @@
                 document.getElementById('apiUrl').value = 'https://test.ldex.dev';
             }
         });
-    </script>
-    function updateStatus(text, color, isHtml = false) {
-    const statusDiv = document.getElementById('status');
-    statusDiv.style.color = color;
-    if (isHtml) {
-    statusDiv.innerText = text; // Keep as text to avoid executing scripts
-    } else {
-    statusDiv.innerText = text;
-    }
-    }
-
-    async function testConnection() {
-    const baseUrl = document.getElementById('apiUrl').value || window.location.origin;
-    updateStatus('Testing GET...', '#facc15');
-
-    try {
-    const response = await fetch(`${baseUrl}/api/v1/chat`);
-    const text = await response.text();
-
-    try {
-    const data = JSON.parse(text);
-    updateStatus(`SUCCESS (GET):\n${JSON.stringify(data, null, 2)}`, '#4ade80');
-    } catch (e) {
-    updateStatus(`PARSING ERROR (Likely Blocked by Zscaler):\n\nRAW RESPONSE:\n${text.substring(0, 1000)}`, '#fb923c');
-    }
-    } catch (error) {
-    updateStatus(`FETCH ERROR:\n${error.message}\n\nThis usually means the domain is outright blocked or DNS is
-    failing.`, '#f87171');
-    }
-    }
-
-    async function testPost(isStealth = false) {
-    const baseUrl = document.getElementById('apiUrl').value || window.location.origin;
-    updateStatus(isStealth ? 'Testing Stealth POST...' : 'Testing POST...', '#facc15');
-
-    const payload = {
-    test: isStealth ? 'stealth_bypass' : 'zscaler_test',
-    timestamp: new Date().toISOString(),
-    message: 'Hello from office laptop!'
-    };
-
-    try {
-    const response = await fetch(`${baseUrl}/api/v1/chat`, {
-    method: 'POST',
-    headers: {
-    'Content-Type': isStealth ? 'text/plain' : 'application/json'
-    },
-    body: isStealth ? JSON.stringify(payload) : JSON.stringify(payload)
-    });
-
-    const text = await response.text();
-    try {
-    const data = JSON.parse(text);
-    updateStatus(`SUCCESS (POST):\n${JSON.stringify(data, null, 2)}`, '#4ade80');
-    } catch (e) {
-    updateStatus(`POST BLOCKED / PARSING ERROR:\n\nRAW RESPONSE:\n${text.substring(0, 1000)}`, '#fb923c');
-    }
-    } catch (error) {
-    updateStatus(`POST FETCH ERROR:\n${error.message}`, '#f87171');
-    }
-    }
     </script>
 </body>
 
